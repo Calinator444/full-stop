@@ -6,5 +6,5 @@ import { Component } from '@angular/core';
   templateUrl: './game.html',
 })
 export class Game {
-  zoom : number = 0;
+  zoom: number = 0;
 }
