@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
-import { Currency, LucideAngularModule, XIcon } from 'lucide-angular';
-import { log } from 'util';
+import { LucideAngularModule, XIcon } from 'lucide-angular';
 @Component({
    selector: 'app-game',
    imports: [LucideAngularModule],
@@ -80,10 +79,9 @@ export class Game {
       }
    }
 
-   removeEvent(ev: Event) {
+   removeEvent(ev: PointerEvent) {
       // Remove this event from the target's cache
       const index = this.evCache.findIndex(
-         //@ts-ignore
          (cachedEv) => cachedEv.pointerId === ev.pointerId
       );
       this.evCache.splice(index, 1);
@@ -91,12 +89,10 @@ export class Game {
 
    handleWheel(event: WheelEvent) {
       const { deltaY, pageX, pageY } = event;
-
-      // prevent horizontal scrolling from having an effect
-
       this.zoomOriginX = pageX;
       this.zoomOriginY = pageY;
 
+      // prevent horizontal scrolling from having an effect
       if (deltaY === 0) return;
 
       const zoomDirection: 'in' | 'out' = event.deltaY > 0 ? 'out' : 'in';
