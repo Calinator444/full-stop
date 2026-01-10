@@ -27,7 +27,7 @@ export class Game {
 
    // pinching behavior based on the mozilla documentation: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events/Pinch_zoom_gestures
 
-   handlePointerUp(ev: Event) {
+   handlePointerUp(ev: PointerEvent) {
       this.removeEvent(ev);
 
       // If the number of pointers down is less than two then reset diff tracker
