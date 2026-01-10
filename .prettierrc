@@ -7,7 +7,7 @@
    "bracketSpacing": true,
    "arrowParens": "always",
    "trailingComma": "es5",
-   "bracketSameLine": false,
+   "bracketSameLine": true,
    "printWidth": 80,
    "overrides": [
       {
