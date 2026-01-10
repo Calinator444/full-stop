@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
-
+import { LucideAngularModule, XIcon } from 'lucide-angular';
 @Component({
    selector: 'app-game',
-   imports: [],
+   imports: [LucideAngularModule],
    templateUrl: './game.html',
 })
 export class Game {
+   readonly XIcon = XIcon;
    open: boolean = false;
    zoomInterval: number = 0.1;
    zoom: number = 1;

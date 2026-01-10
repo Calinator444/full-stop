@@ -19,8 +19,18 @@
          class="absolute transition-transform z-1 object-contain w-full h-full inset-0"
          src="image2.jpg"
          alt="" />
+      <button
+         (click)="toggleInspect()"
+         class="z-2 top-5 p-3 rounded-full border border-white bg-black/35 absolute right-5">
+         <lucide-icon
+            class="size-10"
+            aria-label="close"
+            color="white"
+            [img]="XIcon"></lucide-icon>
+      </button>
    </div>
 }
+
 <button
    (click)="toggleInspect()"
    class="px-3 py-2 bg-blue-600 rounded-lg">
