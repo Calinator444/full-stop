@@ -5,8 +5,28 @@
       alt="" />
 </div>
 
+<!-- Full screen zoomable image -->
+
+@if (open) {
+   <div
+      tabindex="-1"
+      class="absolute bg-black/35 inset-0 overflow-hidden">
+      <img
+         [style.scale]="zoom"
+         [style.transform]="'translate(' + posX + 'px, ' + posY + 'px)'"
+         [style.transformOrigin]="`${zoomOriginX}px ${zoomOriginY}px`"
+         (wheel)="handleWheel($event)"
+         class="absolute transition-transform z-1 object-contain w-full h-full inset-0"
+         src="image2.jpg"
+         alt="" />
+   </div>
+}
 <button
-   onmousemove="console.log('mouse move')"
+   (click)="toggleInspect()"
+   class="px-3 py-2 bg-blue-600 rounded-lg">
+   Toggle Inspect
+</button>
+<button
    class="px-3 py-2 absolute left-1/2 -translate-x-1/2 bg-green-600 rounded-lg mx-auto">
    Guess
 </button>
