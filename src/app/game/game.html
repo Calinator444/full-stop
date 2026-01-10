@@ -1,12 +1,48 @@
-<div class="bg--400 relative mx-auto size-96">
+<!-- TODO: Load images dynamically -->
+<div class="mt-20 max-sm:mt-10 relative mx-auto size-96">
    <img
       class="absolute object-contain w-full h-full inset-0"
       src="image2.jpg"
       alt="" />
 </div>
 
-<button
-   onmousemove="console.log('mouse move')"
-   class="px-3 py-2 absolute left-1/2 -translate-x-1/2 bg-green-600 rounded-lg mx-auto">
-   Guess
-</button>
+<!-- Full screen zoomable image -->
+
+@if (open) {
+   <div
+      tabindex="-1"
+      class="absolute bg-black/35 inset-0 overflow-hidden">
+      <img
+         (pointerdown)="handlePointerDown($event)"
+         (pointermove)="handlePointerMove($event)"
+         (pointerup)="handlePointerUp($event)"
+         [style.scale]="zoom"
+         [style.transform]="'translate(' + posX + 'px, ' + posY + 'px)'"
+         [style.transformOrigin]="`${zoomOriginX}px ${zoomOriginY}px`"
+         (wheel)="handleWheel($event)"
+         class="absolute z-1 object-contain w-full h-full inset-0"
+         src="image2.jpg"
+         alt="" />
+      <button
+         (click)="toggleInspect()"
+         class="z-2 top-5 p-3 rounded-full border border-white bg-black/35 absolute right-5">
+         <lucide-icon
+            class="size-10"
+            aria-label="close"
+            color="white"
+            [img]="XIcon"></lucide-icon>
+      </button>
+   </div>
+}
+
+<div class="flex mt-8 gap-2 flex-col items-center">
+   <!-- TODO: Add guessing system -->
+   <button class="px-3 w-50 py-2 text-white bg-green-600 rounded-lg">
+      Guess
+   </button>
+   <button
+      (click)="toggleInspect()"
+      class="px-3 py-2 text-white bg-blue-600 w-50 rounded-lg">
+      Inspect Image
+   </button>
+</div>
