@@ -92,7 +92,7 @@ app.post('/api/games/:gameId/play', async (req, res) => {
    });
 });
 
-app.post('/api/games/:challengeId/start', async (req, res) => {
+app.post('/api/challenges/:challengeId/start', async (req, res) => {
    const challenge = await db
       .collection('challenges')
       .doc(req.params['challengeId'])

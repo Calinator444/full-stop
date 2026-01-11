@@ -23,7 +23,7 @@ export class Challenges implements OnInit {
 
    playGame(challengeId: string) {
       this.http
-         .post<GameResponse>(`/api/games/${challengeId}/start`, {})
+         .post<GameResponse>(`/api/challenges/${challengeId}/start`, {})
          .subscribe({
             next: (res) => {
                console.log('res', res);
