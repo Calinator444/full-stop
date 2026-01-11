@@ -1,0 +1,3 @@
+type GameResponse = {
+   gameId: string;
+};

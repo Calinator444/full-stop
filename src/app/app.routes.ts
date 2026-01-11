@@ -4,7 +4,7 @@ import { Challenges } from './challenges/challenges';
 
 export const routes: Routes = [
    {
-      path: 'game',
+      path: 'games/:id',
       component: Game,
    },
    {

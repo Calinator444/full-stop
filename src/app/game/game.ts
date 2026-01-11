@@ -1,23 +1,57 @@
-import { Component, OnInit } from '@angular/core';
-import { LucideAngularModule, XIcon } from 'lucide-angular';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { LoaderCircleIcon, LucideAngularModule, XIcon } from 'lucide-angular';
 import { Button } from '../button/button';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Challenge } from '../../types/challenge';
+import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+
 @Component({
    selector: 'app-game',
-   imports: [LucideAngularModule, Button],
+   imports: [Button, FormsModule, LucideAngularModule],
    templateUrl: './game.html',
 })
-export class Game {
+export class Game implements OnInit {
+   constructor(
+      private cdr: ChangeDetectorRef,
+      private route: ActivatedRoute,
+      private http: HttpClient,
+      private router: Router
+   ) {
+      this.gameId = this.route.snapshot.paramMap.get('id') || '';
+   }
    readonly XIcon = XIcon;
+   readonly LoaderCircleIcon = LoaderCircleIcon;
+   gameId: string = '';
    open: boolean = false;
    zoomInterval: number = 0.1;
    zoom: number = 1;
    posX: number = 0;
+   image: string = '';
+   correctLatitude: number = 0;
+   correctLongitude: number = 0;
+
    posY: number = 0;
+   latitude: number = 0;
+   longitude: number = 0;
    zoomOriginX: number = 0;
    zoomOriginY: number = 0;
    maxZoom: number = 4;
    evCache: PointerEvent[] = [];
    prevDiff: number = -1;
+
+   ngOnInit() {
+      this.http
+         .post<Challenge>(`/api/games/${this.gameId}/play`, {})
+         .subscribe((data) => {
+            console.log('data', data);
+            this.image = data.image;
+            this.correctLatitude = data.coordinates._latitude;
+            this.correctLongitude = data.coordinates._longitude;
+            this.cdr.detectChanges();
+         });
+   }
+
    toggleInspect() {
       this.open = !this.open;
    }
