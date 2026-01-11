@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { LucideAngularModule, XIcon } from 'lucide-angular';
+import { Button } from '../button/button';
 @Component({
    selector: 'app-game',
-   imports: [LucideAngularModule],
+   imports: [LucideAngularModule, Button],
    templateUrl: './game.html',
 })
 export class Game {

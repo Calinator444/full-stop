@@ -37,12 +37,13 @@
 
 <div class="flex mt-8 gap-2 flex-col items-center">
    <!-- TODO: Add guessing system -->
-   <button class="px-3 w-50 py-2 text-white bg-green-600 rounded-lg">
-      Guess
-   </button>
-   <button
-      (click)="toggleInspect()"
-      class="px-3 py-2 text-white bg-blue-600 w-50 rounded-lg">
-      Inspect Image
-   </button>
+   <app-button
+      class="w-50"
+      variant="primary"
+      label="Guess" />
+   <app-button
+      variant="secondary"
+      class="w-50"
+      label="Inspect Image"
+      (onClick)="toggleInspect()" />
 </div>

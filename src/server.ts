@@ -44,7 +44,7 @@ const angularApp = new AngularNodeAppEngine();
  * ```
  */
 
-app.get('/challenges', async (req, res) => {
+app.get('/api/challenges', async (req, res) => {
    const challengeRef = db.collection('challenges');
    const challenges = await challengeRef.get();
    res.contentType('application/json');
