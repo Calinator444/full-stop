@@ -1,3 +1,7 @@
+import { cert, initializeApp } from 'firebase-admin/app';
+
+import { getFirestore } from 'firebase-admin/firestore';
+import 'dotenv/config';
 import {
    AngularNodeAppEngine,
    createNodeRequestHandler,
@@ -8,6 +12,22 @@ import express from 'express';
 import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
+
+const initializeAppAsync = async () => {
+   const key = process.env['FIRESTORE_SERVICE_ACCOUNT_KEY'];
+   if (!key) {
+      throw Error('FIRESTORE_SERVICE_ACCOUNT_KEY environment variable not set');
+   }
+   const parsed = await JSON.parse(key);
+   initializeApp({
+      credential: cert(parsed),
+   });
+
+   const db = getFirestore();
+   return db;
+};
+
+const db = await initializeAppAsync();
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
@@ -23,6 +43,13 @@ const angularApp = new AngularNodeAppEngine();
  * });
  * ```
  */
+
+app.get('/challenges', async (req, res) => {
+   const challengeRef = db.collection('challenges');
+   const challenges = await challengeRef.get();
+   res.contentType('application/json');
+   res.json(challenges.docs.map((doc) => doc.data()));
+});
 
 /**
  * Serve static files from /browser
@@ -57,7 +84,6 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
       if (error) {
          throw error;
       }
-
       console.log(`Node Express server listening on http://localhost:${port}`);
    });
 }
