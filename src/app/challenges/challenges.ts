@@ -3,7 +3,7 @@ import { Challenge } from '../../types/challenge';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Button } from '../button/button';
 import { Router } from '@angular/router';
-
+import { GameResponse } from '../../types/api/game';
 @Component({
    selector: 'app-challenges',
    imports: [Button],
@@ -22,16 +22,14 @@ export class Challenges implements OnInit {
    //  }
 
    playGame(challengeId: string) {
-      this.http
-         .post<GameResponse>(`/api/challenges/${challengeId}/start`, {})
-         .subscribe({
-            next: (res) => {
-               console.log('res', res);
-               if (res.gameId) {
-                  this.router.navigateByUrl(`/games/${res.gameId}`);
-               }
-            },
-         });
+      this.http.post<GameResponse>(`/api/games/start`, {}).subscribe({
+         next: (res) => {
+            console.log('res', res);
+            // if (res.gameId) {
+            //    this.router.navigateByUrl(`/games/${res.gameId}`);
+            // }
+         },
+      });
    }
 
    // Haversone formula based on the following resource: https://www.movable-type.co.uk/scripts/latlong.html

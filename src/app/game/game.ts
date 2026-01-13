@@ -1,10 +1,13 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { LoaderCircleIcon, LucideAngularModule, XIcon } from 'lucide-angular';
 import { Button } from '../button/button';
+import { Game as GameSession } from '../../types/game';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Challenge } from '../../types/challenge';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { Challenges } from '../challenges/challenges';
+import { GuessResponse } from '../../types/api/guess';
 
 @Component({
    selector: 'app-game',
@@ -27,10 +30,13 @@ export class Game implements OnInit {
    zoomInterval: number = 0.1;
    zoom: number = 1;
    posX: number = 0;
-   image: string = '';
-   correctLatitude: number = 0;
-   correctLongitude: number = 0;
+   stages: Entity<Challenge>[] = [];
 
+   activeChallenge: Challenge | null = null;
+   image: string = '';
+   // correctLatitude: number = 0;
+   // correctLongitude: number = 0;
+   level: number = -1;
    posY: number = 0;
    latitude: number = 0;
    longitude: number = 0;
@@ -42,12 +48,10 @@ export class Game implements OnInit {
 
    ngOnInit() {
       this.http
-         .post<Challenge>(`/api/games/${this.gameId}/play`, {})
+         .post<GameSession>(`/api/games/${this.gameId}/play`, {})
          .subscribe((data) => {
-            console.log('data', data);
-            this.image = data.image;
-            this.correctLatitude = data.coordinates._latitude;
-            this.correctLongitude = data.coordinates._longitude;
+            this.activeChallenge = data.challenges[0];
+            this.level = 1;
             this.cdr.detectChanges();
          });
    }
@@ -58,6 +62,18 @@ export class Game implements OnInit {
 
    distanceFormula(x1: number, y1: number, x2: number, y2: number) {
       return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+   }
+
+   handleGuess() {
+      this.http
+         .post<GuessResponse>(`/api/games/${this.gameId}/guess`, {
+            _latitude: this.latitude,
+            _longitude: this.longitude,
+            level: this.level,
+         })
+         .subscribe((data) => {
+            console.log(data);
+         });
    }
 
    // pinching behavior based on the mozilla documentation: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events/Pinch_zoom_gestures

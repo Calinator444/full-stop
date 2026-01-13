@@ -1,6 +1,6 @@
 import { cert, initializeApp } from 'firebase-admin/app';
 import { type Challenge } from './types/challenge';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import 'dotenv/config';
 import {
    AngularNodeAppEngine,
@@ -10,6 +10,7 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { GuessResponse } from './types/api/guess';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -30,6 +31,8 @@ const initializeAppAsync = async () => {
 const db = await initializeAppAsync();
 
 const app = express();
+app.use(express.json()); // <-- Add this line
+
 const angularApp = new AngularNodeAppEngine();
 
 /**
@@ -70,27 +73,168 @@ app.get('/api/challenges/:id', async (req, res) => {
    res.json(challenge.data());
 });
 
+type Game = {
+   challenges: FirebaseFirestore.DocumentReference<Challenge>[];
+   startedAt: Date;
+   guesses: Coordinates[];
+};
 app.post('/api/games/:gameId/play', async (req, res) => {
    const gameId = req.params['gameId'];
+
    const gameRef = db.collection('games').doc(gameId);
 
-   const game = await gameRef.get();
-   if (!game.exists) {
-      res.status(404).send('Game not found');
-      return;
-   }
+   const gameResponse = await gameRef.get();
 
-   const { challenge } = game.data() as {
-      challenge: FirebaseFirestore.DocumentReference;
-   };
-   const challengeDoc = await challenge.get();
-   const { coordinates, image } = challengeDoc.data() as Challenge;
+   const gameData = gameResponse.data() as Game;
+
+   const challenges = await Promise.all(
+      gameData.challenges.map(async (challenge) => {
+         const challengeDoc = await challenge.get();
+
+         const challengeData = challengeDoc.data();
+
+         if (!challengeDoc.exists || !challengeData) {
+            throw new Error('Challenge does not exist');
+         }
+
+         const {
+            coordinates: { _latitude, _longitude },
+            image,
+         } = challengeData;
+         return { id: challengeDoc.id, _latitude, _longitude, image };
+      })
+   );
+
+   // const challengeDoc = await challenge.get();
+
    res.contentType('application/json');
    res.json({
-      image,
-      coordinates,
+      gameId: gameId,
+      challenges: challenges,
    });
 });
+
+app.post('/api/games/start', async (req, res) => {
+   const challenges = await db.collection('challenges').get();
+   const gameRef = await db.collection('games').doc();
+
+   await gameRef.set({
+      startedAt: new Date(),
+      challenges: challenges.docs.map((doc) => doc.ref),
+   });
+
+   res.status(200).json({
+      gameId: gameRef.id,
+   });
+});
+
+// fractions of a metre are truncated
+/*
+
+*  scoring curve:
+* 0 - 5 metres: 100 points
+* 5 - 10 metres: 50 points
+* 10 - 20 metres: 40 points
+* 20-30 metres: 30 points
+* 30-40 metres: 20 points
+* 40-50 metres: 10 points
+*/
+
+type GuessRequest = {
+   _latitude: number;
+   _longitude: number;
+   challengeId: string;
+   level: number;
+};
+
+const converter = <T>() => ({
+   toFirestore: (data: Partial<T>) => data,
+   fromFirestore: (snap: FirebaseFirestore.QueryDocumentSnapshot) =>
+      snap.data() as T,
+});
+
+app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
+   '/api/games/:gameId/guess',
+   async (req, res) => {
+      const gameId = req.params['gameId'];
+
+      const gameRef = db
+         .collection('games')
+         .doc(gameId)
+         .withConverter(converter<Game>());
+
+      const game = await gameRef.get();
+      game.data();
+
+      const gameDoc = await gameRef.get();
+
+      const gameData = gameDoc.data();
+
+      if (!gameDoc.exists || !gameData) {
+         res.status(404).send('Game not found');
+         return;
+      }
+      const challengeData = gameData.challenges;
+
+      if (!challengeData) {
+         res.status(500).send('No challenges found for this game');
+         return;
+      }
+
+      const challenges = await Promise.all(
+         challengeData.map(async (challengeRef) => {
+            const challengeDoc = await challengeRef.get();
+
+            return challengeDoc.data();
+         })
+      );
+
+      console.log('body', req.body);
+
+      const challenge = challenges[req.body.level - 1];
+
+      if (!challenge) {
+         res.status(404).send('Challenge not found for this level');
+         return;
+      }
+
+      const distance = haversone(
+         challenge.coordinates._latitude,
+         challenge.coordinates._longitude,
+         req.body._latitude,
+         req.body._longitude
+      );
+
+      const points = score(distance);
+
+      gameRef.update({
+         guesses: FieldValue.arrayUnion({
+            coordinates: {
+               _latitude: req.body._latitude,
+               _longitude: req.body._longitude,
+            },
+            score: points,
+         }),
+      });
+
+      res.contentType('application/json');
+      res.json({
+         result: points > 0 ? 'success' : 'failure',
+         points,
+         distance: Math.trunc(distance),
+      });
+   }
+);
+
+const score = (distance: number): number => {
+   if (distance <= 5) return 100;
+   if (distance <= 10) return 50;
+   if (distance <= 20) return 40;
+   if (distance <= 30) return 30;
+   if (distance <= 40) return 20;
+   if (distance <= 50) return 10;
+   return 0;
+};
 
 app.post('/api/challenges/:challengeId/start', async (req, res) => {
    const challenge = await db
