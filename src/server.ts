@@ -1,6 +1,6 @@
 import { cert, initializeApp } from 'firebase-admin/app';
 import { type Challenge } from './types/challenge';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, GeoPoint, getFirestore } from 'firebase-admin/firestore';
 import 'dotenv/config';
 import {
    AngularNodeAppEngine,
@@ -76,7 +76,10 @@ app.get('/api/challenges/:id', async (req, res) => {
 type Game = {
    challenges: FirebaseFirestore.DocumentReference<Challenge>[];
    startedAt: Date;
-   guesses: Coordinates[];
+   guesses: {
+      coordinates: Coordinates;
+      score: number;
+   }[];
 };
 app.post('/api/games/:gameId/play', async (req, res) => {
    const gameId = req.params['gameId'];
@@ -117,10 +120,10 @@ app.post('/api/games/:gameId/play', async (req, res) => {
 app.post('/api/games/start', async (req, res) => {
    const challenges = await db.collection('challenges').get();
    const gameRef = await db.collection('games').doc();
-
    await gameRef.set({
       startedAt: new Date(),
       challenges: challenges.docs.map((doc) => doc.ref),
+      guesses: [],
    });
 
    res.status(200).json({
@@ -148,7 +151,7 @@ type GuessRequest = {
 };
 
 const converter = <T>() => ({
-   toFirestore: (data: Partial<T>) => data,
+   toFirestore: (data: T) => data,
    fromFirestore: (snap: FirebaseFirestore.QueryDocumentSnapshot) =>
       snap.data() as T,
 });
@@ -164,6 +167,7 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
          .withConverter(converter<Game>());
 
       const game = await gameRef.get();
+
       game.data();
 
       const gameDoc = await gameRef.get();
@@ -174,12 +178,8 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
          res.status(404).send('Game not found');
          return;
       }
-      const challengeData = gameData.challenges;
 
-      if (!challengeData) {
-         res.status(500).send('No challenges found for this game');
-         return;
-      }
+      const challengeData = gameData.challenges;
 
       const challenges = await Promise.all(
          challengeData.map(async (challengeRef) => {
@@ -188,8 +188,6 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
             return challengeDoc.data();
          })
       );
-
-      console.log('body', req.body);
 
       const challenge = challenges[req.body.level - 1];
 
@@ -206,15 +204,21 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
       );
 
       const points = score(distance);
-
+      if (req.body.level >= gameData.guesses.length) {
+         res.status(422).send('Guess cannot be made for a future level');
+         return;
+      }
       gameRef.update({
-         guesses: FieldValue.arrayUnion({
-            coordinates: {
-               _latitude: req.body._latitude,
-               _longitude: req.body._longitude,
+         guesses: [
+            ...gameData.guesses,
+            {
+               coordinates: new GeoPoint(
+                  req.body._latitude,
+                  req.body._longitude
+               ),
+               score: points,
             },
-            score: points,
-         }),
+         ],
       });
 
       res.contentType('application/json');
