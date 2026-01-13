@@ -84,12 +84,20 @@ type Game = {
 app.post('/api/games/:gameId/play', async (req, res) => {
    const gameId = req.params['gameId'];
 
-   const gameRef = db.collection('games').doc(gameId);
+   const gameRef = db
+      .collection('games')
+      .withConverter(GameConverter)
+      .doc(gameId);
 
    const gameResponse = await gameRef.get();
 
-   const gameData = gameResponse.data() as Game;
+   const gameData = gameResponse.data();
+   if (!gameResponse.exists || !gameData) {
+      res.status(404).send('Game not found');
+      return;
+   }
 
+   console.log('gameData', gameData);
    const challenges = await Promise.all(
       gameData.challenges.map(async (challenge) => {
          const challengeDoc = await challenge.get();
@@ -108,21 +116,35 @@ app.post('/api/games/:gameId/play', async (req, res) => {
       })
    );
 
+   const { guesses } = gameData;
+
    // const challengeDoc = await challenge.get();
 
    res.contentType('application/json');
    res.json({
       gameId: gameId,
       challenges: challenges,
+      guesses,
    });
 });
 
 app.post('/api/games/start', async (req, res) => {
-   const challenges = await db.collection('challenges').get();
-   const gameRef = await db.collection('games').doc();
+   const challenges = await db
+      .collection('challenges')
+      .withConverter(ChallengeConverter)
+      .get();
+
+   const gameRef = await db
+      .collection('games')
+      .withConverter(GameConverter)
+      .doc();
+
+   const sortedDocs = challenges.docs.sort(
+      (a, b) => a.data().order - b.data().order
+   );
    await gameRef.set({
       startedAt: new Date(),
-      challenges: challenges.docs.map((doc) => doc.ref),
+      challenges: sortedDocs.map((doc) => doc.ref),
       guesses: [],
    });
 
@@ -156,6 +178,10 @@ const converter = <T>() => ({
       snap.data() as T,
 });
 
+const GameConverter = converter<Game>();
+
+const ChallengeConverter = converter<Challenge>();
+
 app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
    '/api/games/:gameId/guess',
    async (req, res) => {
@@ -165,10 +191,6 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
          .collection('games')
          .doc(gameId)
          .withConverter(converter<Game>());
-
-      const game = await gameRef.get();
-
-      game.data();
 
       const gameDoc = await gameRef.get();
 
@@ -184,7 +206,6 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
       const challenges = await Promise.all(
          challengeData.map(async (challengeRef) => {
             const challengeDoc = await challengeRef.get();
-
             return challengeDoc.data();
          })
       );
@@ -204,7 +225,9 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
       );
 
       const points = score(distance);
-      if (req.body.level >= gameData.guesses.length) {
+
+      console.log('level', req.body.level, gameData.guesses.length);
+      if (req.body.level - 1 > gameData.guesses.length) {
          res.status(422).send('Guess cannot be made for a future level');
          return;
       }
@@ -240,23 +263,26 @@ const score = (distance: number): number => {
    return 0;
 };
 
-app.post('/api/challenges/:challengeId/start', async (req, res) => {
-   const challenge = await db
-      .collection('challenges')
-      .doc(req.params['challengeId'])
-      .get();
-   if (!challenge.exists) {
-      res.status(404).send('Challenge not found');
-      return;
-   }
-   const gameRef = await db.collection('games').doc();
+// app.post('/api/challenges/:challengeId/start', async (req, res) => {
+//    const challenge = await db
+//       .collection('challenges')
+//       .doc(req.params['challengeId'])
+//       .get();
+//    if (!challenge.exists) {
+//       res.status(404).send('Challenge not found');
+//       return;
+//    }
+//    const gameRef = await db
+//       .collection('games')
+//       .withConverter(converter<Game>())
+//       .doc();
 
-   await gameRef.set({
-      challenge: challenge.ref,
-      startedAt: new Date(),
-   });
-   res.status(200).json({ gameId: gameRef.id });
-});
+//    await gameRef.set({
+//       challenge: challenge.ref,
+//       startedAt: new Date(),
+//    });
+//    res.status(200).json({ gameId: gameRef.id });
+// });
 
 // app.post('/api/challenges/:id/guess', async (req, res) => {
 //    const challengeId = req.params['id'];

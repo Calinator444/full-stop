@@ -1,48 +1,58 @@
 <!-- TODO: Load images dynamically -->
+<div class="absolute">Level {{ level }}</div>
+<div class="mt-20 max-sm:mt-10 relative mx-auto size-96">
+   @if (activeChallenge) {
+      <img
+         class="absolute object-contain w-full h-full inset-0"
+         [src]="activeChallenge.image"
+         alt="" />
+   } @else {
+      <div class="absolute inset-0 rounded-md bg-gray-500"></div>
+      <lucide-icon
+         class="absolute animation-duration-200 left-1/2 top-1/2 -translate-x-1/2 size-10 animate-spin -translate-y-1/2"
+         [img]="LoaderCircleIcon"
+         name="loader-circle"></lucide-icon>
+   }
 
-@if (activeChallenge) {
-   <div class="mt-20 max-sm:mt-10 relative mx-auto size-96">
-      @if (activeChallenge) {
-         <img
-            class="absolute object-contain w-full h-full inset-0"
-            [src]="activeChallenge.image"
-            alt="" />
-      } @else {
-         <lucide-icon
-            [img]="LoaderCircleIcon"
-            name="loader-circle"></lucide-icon>
-      }
-   </div>
-
-   <!-- Full screen zoomable image -->
-
-   @if (activeChallenge && open) {
+   @if (showScore) {
       <div
-         tabindex="-1"
-         class="absolute bg-black/35 inset-0 overflow-hidden">
-         <img
-            (pointerdown)="handlePointerDown($event)"
-            (pointermove)="handlePointerMove($event)"
-            (pointerup)="handlePointerUp($event)"
-            [style.scale]="zoom"
-            [style.transform]="'translate(' + posX + 'px, ' + posY + 'px)'"
-            [style.transformOrigin]="`${zoomOriginX}px ${zoomOriginY}px`"
-            (wheel)="handleWheel($event)"
-            class="absolute z-1 object-contain w-full h-full inset-0"
-            [src]="activeChallenge.image"
-            alt="" />
-         <button
-            (click)="toggleInspect()"
-            class="z-2 top-5 p-3 rounded-full border border-white bg-black/35 absolute right-5">
-            <lucide-icon
-               class="size-10"
-               aria-label="close"
-               color="white"
-               [img]="XIcon"></lucide-icon>
-         </button>
+         class="absolute inset-0 bg-black/80 text-center text-2xl text-white p-2">
+         <p class="top-1/2 absolute -translate-y-1/2 left-1/2 -translate-x-1/2">
+            You scored {{ scoreResult }} points!
+         </p>
       </div>
    }
+</div>
+
+<!-- Full screen zoomable image -->
+
+@if (activeChallenge && open) {
+   <div
+      tabindex="-1"
+      class="absolute bg-black/35 inset-0 overflow-hidden">
+      <img
+         (pointerdown)="handlePointerDown($event)"
+         (pointermove)="handlePointerMove($event)"
+         (pointerup)="handlePointerUp($event)"
+         [style.scale]="zoom"
+         [style.transform]="'translate(' + posX + 'px, ' + posY + 'px)'"
+         [style.transformOrigin]="`${zoomOriginX}px ${zoomOriginY}px`"
+         (wheel)="handleWheel($event)"
+         class="absolute z-1 object-contain w-full h-full inset-0"
+         [src]="activeChallenge.image"
+         alt="" />
+      <button
+         (click)="toggleInspect()"
+         class="z-2 top-5 p-3 rounded-full border border-white bg-black/35 absolute right-5">
+         <lucide-icon
+            class="size-10"
+            aria-label="close"
+            color="white"
+            [img]="XIcon"></lucide-icon>
+      </button>
+   </div>
 }
+
 <div class="w-full flex items-center justify-center">
    <app-button
       variant="secondary"

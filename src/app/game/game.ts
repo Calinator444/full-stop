@@ -31,11 +31,8 @@ export class Game implements OnInit {
    zoom: number = 1;
    posX: number = 0;
    stages: Entity<Challenge>[] = [];
-
    activeChallenge: Challenge | null = null;
    image: string = '';
-   // correctLatitude: number = 0;
-   // correctLongitude: number = 0;
    level: number = -1;
    posY: number = 0;
    latitude: number = 0;
@@ -45,13 +42,19 @@ export class Game implements OnInit {
    maxZoom: number = 4;
    evCache: PointerEvent[] = [];
    prevDiff: number = -1;
+   showScore = false;
+
+   // TODO: find a more elegant way to determine when to show the score
+   // maybe using a redux store?
+   scoreResult?: number;
 
    ngOnInit() {
       this.http
          .post<GameSession>(`/api/games/${this.gameId}/play`, {})
          .subscribe((data) => {
-            this.activeChallenge = data.challenges[0];
-            this.level = 1;
+            this.stages = data.challenges;
+            this.level = data.guesses.length + 1;
+            this.activeChallenge = data.challenges[this.level - 1];
             this.cdr.detectChanges();
          });
    }
@@ -72,7 +75,11 @@ export class Game implements OnInit {
             level: this.level,
          })
          .subscribe((data) => {
-            console.log(data);
+            this.level += 1;
+            this.activeChallenge = this.stages[this.level - 1];
+            this.scoreResult = data.points;
+            this.showScore = true;
+            this.cdr.detectChanges();
          });
    }
 
