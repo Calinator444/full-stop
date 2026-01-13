@@ -8,10 +8,11 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Challenges } from '../challenges/challenges';
 import { GuessResponse } from '../../types/api/guess';
+import { InputBox } from '../input/input';
 
 @Component({
    selector: 'app-game',
-   imports: [Button, FormsModule, LucideAngularModule],
+   imports: [Button, FormsModule, LucideAngularModule, InputBox],
    templateUrl: './game.html',
 })
 export class Game implements OnInit {
@@ -39,6 +40,7 @@ export class Game implements OnInit {
    longitude: number = 0;
    zoomOriginX: number = 0;
    zoomOriginY: number = 0;
+   gameOver: boolean = false;
    maxZoom: number = 4;
    evCache: PointerEvent[] = [];
    prevDiff: number = -1;
@@ -53,7 +55,12 @@ export class Game implements OnInit {
          .post<GameSession>(`/api/games/${this.gameId}/play`, {})
          .subscribe((data) => {
             this.stages = data.challenges;
-            this.level = data.guesses.length + 1;
+
+            this.level = Math.min(
+               data.challenges.length,
+               data.guesses.length + 1
+            );
+
             this.activeChallenge = data.challenges[this.level - 1];
             this.cdr.detectChanges();
          });
@@ -75,7 +82,6 @@ export class Game implements OnInit {
             level: this.level,
          })
          .subscribe((data) => {
-            this.level += 1;
             this.activeChallenge = this.stages[this.level - 1];
             this.scoreResult = data.points;
             this.showScore = true;

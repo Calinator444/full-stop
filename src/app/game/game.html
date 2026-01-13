@@ -62,36 +62,24 @@
 </div>
 <div class="flex mt-8 gap-2 flex-col items-center">
    <div class="flex-col flex gap-2">
-      <div class="divide-x flex divide-accent border-accent">
-         <label
-            class="bg-foreground text-primary border-r-0 p-1 border-foreground-accent border rounded-l-md"
-            for="latitude"
-            >Latitude</label
-         >
-         <input
-            type="number"
-            [(ngModel)]="latitude"
-            class="focus:outline-1 grow rounded-r-md p-1 border border-foreground-accent [&::-webkit-inner-spin-button]:appearance-none"
-            id="latitude" />
-      </div>
-      <div class="divide-x flex divide-accent border-accent">
-         <label
-            class="bg-foreground text-primary border-r-0 p-1 border-foreground-accent border rounded-l-md"
-            for="longitude"
-            >Longitude</label
-         >
-         <input
-            [(ngModel)]="longitude"
-            class="focus:outline-1 grow rounded-r-md p-1 border border-foreground-accent [&::-webkit-inner-spin-button]:appearance-none"
-            id="longitude"
-            type="number" />
-      </div>
-
-      <!-- TODO: Add guessing system -->
+      <app-input
+         [(value)]="longitude"
+         label="Longitude" />
+      <app-input
+         [(value)]="latitude"
+         label="Latitude" />
       <app-button
          (click)="handleGuess()"
          class="self-end mt-2"
          variant="primary"
          label="Guess" />
+      @if (gameOver) {
+         <app-button
+            variant="secondary"
+            label="End Game" />
+      }
+      @if (showScore) {
+         <app-button label="Next" />
+      }
    </div>
 </div>
