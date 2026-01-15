@@ -304,56 +304,6 @@ const score = (distance: number): number => {
    return 0;
 };
 
-// app.post('/api/challenges/:challengeId/start', async (req, res) => {
-//    const challenge = await db
-//       .collection('challenges')
-//       .doc(req.params['challengeId'])
-//       .get();
-//    if (!challenge.exists) {
-//       res.status(404).send('Challenge not found');
-//       return;
-//    }
-//    const gameRef = await db
-//       .collection('games')
-//       .withConverter(converter<Game>())
-//       .doc();
-
-//    await gameRef.set({
-//       challenge: challenge.ref,
-//       startedAt: new Date(),
-//    });
-//    res.status(200).json({ gameId: gameRef.id });
-// });
-
-// app.post('/api/challenges/:id/guess', async (req, res) => {
-//    const challengeId = req.params['id'];
-
-//    db.collection('guesses').add({
-//       challengeId,
-//       latitude: req.body.latitude,
-//       longitude: req.body.longitude,
-//    });
-
-//    const challenge = await db.collection('challenges').doc(challengeId).get();
-//    if (!challenge.exists) {
-//       res.status(404).send('Challenge not found');
-//       return;
-//    }
-//    const { _latitude, _longitude } = challenge.data() as {
-//       _latitude: number;
-//       _longitude: number;
-//    };
-
-//    const distance = haversone(
-//       _latitude,
-//       _longitude,
-//       req.body.latitude,
-//       req.body.longitude
-//    );
-
-//    res.redirect(`/challenges/${challengeId}/result`);
-// });
-
 /**
  * Serve static files from /browser
  */
@@ -413,9 +363,3 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
  * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
  */
 export const reqHandler = createNodeRequestHandler(app);
-
-// interface Challenge {
-//    _latitude: number;
-//    _longitude: number;
-//    image: string;
-// }
