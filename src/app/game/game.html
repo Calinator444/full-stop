@@ -1,29 +1,68 @@
 <!-- TODO: Load images dynamically -->
-<div class="absolute">Level {{ level }}</div>
-<div class="mt-20 max-sm:mt-10 relative mx-auto size-96">
-   @if (activeChallenge) {
-      <img
-         class="absolute object-contain w-full h-full inset-0"
-         [src]="activeChallenge.image"
-         alt="" />
-   } @else {
-      <div class="absolute inset-0 rounded-md bg-gray-500"></div>
-      <lucide-icon
-         class="absolute animation-duration-200 left-1/2 top-1/2 -translate-x-1/2 size-10 animate-spin -translate-y-1/2"
-         [img]="LoaderCircleIcon"
-         name="loader-circle"></lucide-icon>
-   }
 
-   @if (showScore) {
-      <div
-         class="absolute inset-0 bg-black/80 text-center text-2xl text-white p-2">
-         <p class="top-1/2 absolute -translate-y-1/2 left-1/2 -translate-x-1/2">
-            You scored {{ scoreResult }} points!
-         </p>
-      </div>
-   }
-</div>
-
+@if (gameStage === 'playing') {
+   <h2 class="text-3xl mb-10 text-center">Level {{ level }}</h2>
+}
+@if (scoreResult && (gameStage === 'scoring' || gameStage === 'gameover')) {
+   <h2 class="text-3xl mb-10 text-center">
+      Level {{ level }} - Score: {{ scoreResult.points }}
+   </h2>
+}
+@if (scoreResult && (gameStage === 'scoring' || gameStage === 'gameover')) {
+   <div class="map-container size-96 mx-auto rounded-2xl overflow-hidden">
+      <google-map
+         [center]="actualPosition"
+         [options]="options">
+         @if (scoreResult.distance === 0) {
+            <map-marker
+               [label]="{
+                  text: 'Perfect Guess!',
+                  color: 'white',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+               }"
+               [position]="actualPosition"></map-marker>
+         } @else {
+            <map-marker
+               [label]="{
+                  text: 'Guess Position',
+                  color: 'white',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+               }"
+               [position]="guessPosition"></map-marker>
+            <map-polyline
+               [options]="{ strokeColor: 'red' }"
+               [path]="[guessPosition, actualPosition]"></map-polyline>
+            <map-marker
+               [label]="{
+                  text: 'Actual Location',
+                  color: 'white',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+               }"
+               [position]="actualPosition">
+            </map-marker>
+         }
+      </google-map>
+   </div>
+}
+@if (gameStage === 'playing') {
+   <div class="relative mx-auto size-96">
+      @if (activeChallenge) {
+         <img
+            class="absolute object-contain w-full h-full inset-0"
+            [src]="stages[level - 1].image"
+            alt="" />
+      } @else {
+         <div class="absolute inset-0 rounded-md bg-gray-500"></div>
+         <lucide-icon
+            class="absolute animation-duration-200 left-1/2 top-1/2 -translate-x-1/2 size-10 animate-spin -translate-y-1/2"
+            [img]="LoaderCircleIcon"
+            name="loader-circle"></lucide-icon>
+      }
+   </div>
+}
 <!-- Full screen zoomable image -->
 
 @if (activeChallenge && open) {
@@ -39,7 +78,7 @@
          [style.transformOrigin]="`${zoomOriginX}px ${zoomOriginY}px`"
          (wheel)="handleWheel($event)"
          class="absolute z-1 object-contain w-full h-full inset-0"
-         [src]="activeChallenge.image"
+         [src]="stages[level - 1].image"
          alt="" />
       <button
          (click)="toggleInspect()"
@@ -52,7 +91,6 @@
       </button>
    </div>
 }
-
 <div class="w-full flex items-center justify-center">
    <app-button
       variant="secondary"
@@ -61,25 +99,46 @@
       (onClick)="toggleInspect()" />
 </div>
 <div class="flex mt-8 gap-2 flex-col items-center">
-   <div class="flex-col flex gap-2">
-      <app-input
-         [(value)]="longitude"
-         label="Longitude" />
+   <div class="flex-col max-w-lg w-full flex gap-2">
+      @if (gameStage === 'scoring' && scoreResult) {
+         <p>Distance: {{ scoreResult.distance }}m</p>
+      }
+      @if (gameStage === 'playing') {
+         <p>
+            Please note that a precision of less than 7 decimal places will be
+            unlikely to affect your score
+         </p>
+      }
       <app-input
          [(value)]="latitude"
+         class="w-full"
+         [disabled]="gameStage === 'scoring'"
          label="Latitude" />
-      <app-button
-         (click)="handleGuess()"
-         class="self-end mt-2"
-         variant="primary"
-         label="Guess" />
-      @if (gameOver) {
+      <app-input
+         [(value)]="longitude"
+         class="w-full"
+         [disabled]="gameStage === 'scoring'"
+         label="Longitude" />
+
+      @if (gameStage === 'playing') {
          <app-button
+            (click)="handleGuess()"
+            class="self-end mt-2"
+            variant="primary"
+            label="Guess" />
+      }
+      @if (gameStage === 'gameover') {
+         <app-button
+            [disabled]="true"
+            class="self-end mt-2"
             variant="secondary"
             label="End Game" />
       }
-      @if (showScore) {
-         <app-button label="Next" />
+      @if (gameStage === 'scoring') {
+         <app-button
+            (click)="nextLevel()"
+            class="self-end mt-2"
+            label="Next" />
       }
    </div>
 </div>

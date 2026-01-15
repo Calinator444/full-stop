@@ -1,6 +1,7 @@
 import { cert, initializeApp } from 'firebase-admin/app';
 import { type Challenge } from './types/challenge';
 import { FieldValue, GeoPoint, getFirestore } from 'firebase-admin/firestore';
+import { Game as GameSesion } from './types/game';
 import 'dotenv/config';
 import {
    AngularNodeAppEngine,
@@ -74,59 +75,62 @@ app.get('/api/challenges/:id', async (req, res) => {
 });
 
 type Game = {
-   challenges: FirebaseFirestore.DocumentReference<Challenge>[];
+   challenges: FirebaseFirestore.DocumentReference<
+      Challenge & { order: number }
+   >[];
    startedAt: Date;
    guesses: {
       coordinates: Coordinates;
       score: number;
    }[];
 };
-app.post('/api/games/:gameId/play', async (req, res) => {
-   const gameId = req.params['gameId'];
 
-   const gameRef = db
-      .collection('games')
-      .withConverter(GameConverter)
-      .doc(gameId);
+app.post<{ gameId: string }, GameSesion | string>(
+   '/api/games/:gameId/play',
+   async (req, res) => {
+      const gameId = req.params['gameId'];
 
-   const gameResponse = await gameRef.get();
+      const gameRef = db
+         .collection('games')
+         .withConverter(GameConverter)
+         .doc(gameId);
 
-   const gameData = gameResponse.data();
-   if (!gameResponse.exists || !gameData) {
-      res.status(404).send('Game not found');
-      return;
+      const gameResponse = await gameRef.get();
+
+      const gameData = gameResponse.data();
+      if (!gameResponse.exists || !gameData) {
+         res.status(404).send('Game not found');
+         return;
+      }
+
+      console.log('gameData', gameData);
+      const challenges = await Promise.all(
+         gameData.challenges.map(async (challenge) => {
+            const challengeDoc = await challenge.get();
+
+            const challengeData = challengeDoc.data();
+
+            if (!challengeDoc.exists || !challengeData) {
+               throw new Error('Challenge does not exist');
+            }
+
+            const { coordinates, image } = challengeData;
+            return { id: challengeDoc.id, coordinates, image };
+         })
+      );
+
+      const { guesses } = gameData;
+
+      // const challengeDoc = await challenge.get();
+
+      res.contentType('application/json');
+      res.json({
+         gameId: gameId,
+         challenges: challenges,
+         guesses,
+      });
    }
-
-   console.log('gameData', gameData);
-   const challenges = await Promise.all(
-      gameData.challenges.map(async (challenge) => {
-         const challengeDoc = await challenge.get();
-
-         const challengeData = challengeDoc.data();
-
-         if (!challengeDoc.exists || !challengeData) {
-            throw new Error('Challenge does not exist');
-         }
-
-         const {
-            coordinates: { _latitude, _longitude },
-            image,
-         } = challengeData;
-         return { id: challengeDoc.id, _latitude, _longitude, image };
-      })
-   );
-
-   const { guesses } = gameData;
-
-   // const challengeDoc = await challenge.get();
-
-   res.contentType('application/json');
-   res.json({
-      gameId: gameId,
-      challenges: challenges,
-      guesses,
-   });
-});
+);
 
 app.post('/api/games/start', async (req, res) => {
    const challenges = await db
@@ -180,7 +184,7 @@ const converter = <T>() => ({
 
 const GameConverter = converter<Game>();
 
-const ChallengeConverter = converter<Challenge>();
+const ChallengeConverter = converter<Challenge & { order: number }>();
 
 app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
    '/api/games/:gameId/guess',

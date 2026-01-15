@@ -3,16 +3,29 @@ import { LoaderCircleIcon, LucideAngularModule, XIcon } from 'lucide-angular';
 import { Button } from '../button/button';
 import { Game as GameSession } from '../../types/game';
 import { ActivatedRoute, Router } from '@angular/router';
+import { environment } from '../../environments/environment';
+
 import { Challenge } from '../../types/challenge';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { Challenges } from '../challenges/challenges';
 import { GuessResponse } from '../../types/api/guess';
 import { InputBox } from '../input/input';
+import { GoogleMap, MapMarker, MapPolyline } from '@angular/google-maps';
+import { JsonPipe } from '@angular/common';
+import { ScoreResult } from '../../types/score-result';
 
 @Component({
    selector: 'app-game',
-   imports: [Button, FormsModule, LucideAngularModule, InputBox],
+   imports: [
+      Button,
+      FormsModule,
+      LucideAngularModule,
+      MapPolyline,
+      InputBox,
+      GoogleMap,
+      JsonPipe,
+      MapMarker,
+   ],
    templateUrl: './game.html',
 })
 export class Game implements OnInit {
@@ -24,16 +37,49 @@ export class Game implements OnInit {
    ) {
       this.gameId = this.route.snapshot.paramMap.get('id') || '';
    }
+   // testing with coordinates for Image 1 (Sydney)
+   center: google.maps.LatLngLiteral = {
+      lat: -33.849604803258465,
+      lng: 151.16430681061593,
+   };
+   zoom = 12;
    readonly XIcon = XIcon;
    readonly LoaderCircleIcon = LoaderCircleIcon;
+
+   gameStage: 'loading' | 'playing' | 'scoring' | 'gameover' = 'loading';
+
+   guessPosition: google.maps.LatLngLiteral = {
+      lat: 0,
+      lng: 0,
+   };
+   actualPosition: google.maps.LatLngLiteral = {
+      lat: 0,
+      lng: 0,
+   };
    gameId: string = '';
    open: boolean = false;
    zoomInterval: number = 0.1;
-   zoom: number = 1;
    posX: number = 0;
    stages: Entity<Challenge>[] = [];
-   activeChallenge: Challenge | null = null;
+   options: google.maps.MapOptions = {
+      mapTypeId: 'satellite',
+      fullscreenControl: false,
+      mapTypeControl: false,
+      streetViewControl: false,
+      rotateControl: false,
+      scaleControl: false,
+      cameraControl: false,
+      zoom: 17,
+   };
+   markeropts: google.maps.MarkerLabel = {
+      text: 'Your Guess',
+      color: 'white',
+      fontSize: '16px',
+      fontWeight: 'bold',
+   };
+   // activeChallenge: Challenge | null = null;
    image: string = '';
+   labl = 'this is a marker label';
    level: number = -1;
    posY: number = 0;
    latitude: number = 0;
@@ -45,10 +91,10 @@ export class Game implements OnInit {
    evCache: PointerEvent[] = [];
    prevDiff: number = -1;
    showScore = false;
-
+   vertices: google.maps.LatLngLiteral[] = [];
    // TODO: find a more elegant way to determine when to show the score
    // maybe using a redux store?
-   scoreResult?: number;
+   scoreResult?: GuessResponse;
 
    ngOnInit() {
       this.http
@@ -61,7 +107,8 @@ export class Game implements OnInit {
                data.guesses.length + 1
             );
 
-            this.activeChallenge = data.challenges[this.level - 1];
+            // this.activeChallenge = data.challenges[this.level - 1];
+            this.gameStage = 'playing';
             this.cdr.detectChanges();
          });
    }
@@ -73,6 +120,9 @@ export class Game implements OnInit {
    distanceFormula(x1: number, y1: number, x2: number, y2: number) {
       return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
    }
+   get activeChallenge() {
+      return this.stages[this.level - 1];
+   }
 
    handleGuess() {
       this.http
@@ -82,9 +132,27 @@ export class Game implements OnInit {
             level: this.level,
          })
          .subscribe((data) => {
-            this.activeChallenge = this.stages[this.level - 1];
-            this.scoreResult = data.points;
-            this.showScore = true;
+            if (this.activeChallenge) {
+               this.actualPosition = {
+                  lat: this.activeChallenge.coordinates._latitude,
+                  lng: this.activeChallenge.coordinates._longitude,
+               };
+               this.guessPosition = {
+                  lat: this.latitude,
+                  lng: this.longitude,
+               };
+               this.vertices = [this.guessPosition, this.actualPosition];
+            }
+
+            // this.activeChallenge = this.stages[this.level - 1];
+            this.scoreResult = data;
+            // this.scoreResult = data.points;
+
+            if (this.level === this.stages.length) {
+               this.gameStage = 'gameover';
+            } else {
+               this.gameStage = 'scoring';
+            }
             this.cdr.detectChanges();
          });
    }
@@ -102,6 +170,13 @@ export class Game implements OnInit {
 
    handlePointerDown(ev: PointerEvent) {
       this.evCache.push(ev);
+   }
+
+   nextLevel() {
+      this.level += 1;
+      this.latitude = 0;
+      this.longitude = 0;
+      this.gameStage = 'playing';
    }
 
    handlePointerMove(ev: PointerEvent) {

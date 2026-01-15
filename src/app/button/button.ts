@@ -11,6 +11,7 @@ export class Button {
    @Input() size: ButtonSize = 'medium';
    @Input() label: string = '';
    @Input() class: string = '';
+   @Input() disabled: boolean = false;
    @Output() onClick = new EventEmitter<void>();
 
    handleClick() {

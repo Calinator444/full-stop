@@ -1,11 +1,12 @@
 <div
-   class="divide-x flex has-disabled:opacity-50 group-disabled:opacity-50 divide-accent border-accent">
+   class="divide-x flex has-disabled:opacity-85 group-disabled:opacity-50 divide-accent border-accent">
    <label
       class="bg-foreground text-primary border-r-0 p-1 border-foreground-accent border rounded-l-md"
       >{{ label }}</label
    >
    <input
       [(ngModel)]="value"
+      [disabled]="disabled"
       class="focus:outline-1 group grow rounded-r-md p-1 border border-foreground-accent [&::-webkit-inner-spin-button]:appearance-none"
       type="number" />
 </div>

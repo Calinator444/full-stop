@@ -1,6 +1,4 @@
-import { GuessResult } from '../guess';
-
-export type GuessResponse = {
+export type ScoreResult = {
    distance: number;
    points: number;
    result: 'success' | 'failure';

@@ -9,5 +9,6 @@ import { EventEmitter } from 'stream';
 })
 export class InputBox {
    @Input() label: string = '';
+   @Input() disabled: boolean = false;
    value = model<number>(0);
 }
