@@ -13,7 +13,9 @@ jobs:
       runs-on: ubuntu-latest
       steps:
          - uses: actions/checkout@v4
-         - run: npm run build
+         - run:
+              echo "FIRESTORE_SERVICE_ACCOUNT_KEY='${{ secrets.FIRESTORE_SERVICE_ACCOUNT_KEY }}'" > .env
+              npm run build
            env:
               FIRESTORE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIRESTORE_SERVICE_ACCOUNT_KEY }}
          - uses: FirebaseExtended/action-hosting-deploy@v0
