@@ -20,7 +20,6 @@ import { JsonPipe } from '@angular/common';
       MapPolyline,
       InputBox,
       GoogleMap,
-      JsonPipe,
       MapMarker,
    ],
    templateUrl: './game.html',
