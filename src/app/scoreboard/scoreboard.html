@@ -1,0 +1,45 @@
+<div class="flex flex-col max-w-7xl mx-auto">
+   <h2 class="text-3xl mb-10 text-center">Score</h2>
+
+   <table class="table-auto w-full">
+      <thead class="border-b border-accent">
+         <tr class="*:p-2">
+            <th>Round</th>
+            <th>Guess</th>
+            <th>Distance</th>
+            <th>Points</th>
+         </tr>
+      </thead>
+      <tbody>
+         @if (scoreboard) {
+            @for (round of scoreboard.rounds; track $index) {
+               <tr class="border-b *:px-2 border-accent odd:bg-slate-800">
+                  <td>{{ $index + 1 }}</td>
+                  <td>
+                     <span class="text-nowrap"
+                        >Lat: {{ round.guess._latitude }}</span
+                     >,
+                     <span class="text-nowrap"
+                        >Lng: {{ round.guess._longitude }}</span
+                     >
+                  </td>
+                  <td>{{ round.distance }} m</td>
+                  <td>{{ round.points }}</td>
+               </tr>
+            }
+         }
+         <tr class="*:px-2">
+            <td
+               colspan="3"
+               class="col-span-3"></td>
+            <td class="font-semibold">{{ scoreboard?.score }}</td>
+         </tr>
+      </tbody>
+   </table>
+
+   <app-button
+      variant="secondary"
+      class="mt-4 self-end"
+      label="Play Again"
+      (onClick)="startGame()" />
+</div>

@@ -1,1 +1,65 @@
-<button (click)="startGame()">Start Game</button>
+<div class="flex flex-col gap-3 max-w-7xl mx-auto">
+   <h1 class="text-3xl mb-10 text-center">Welcome to FullStop</h1>
+
+   <h2 class="text-lg mb-2">How to Play</h2>
+   <ol class="list-decimal list-inside">
+      <li>You will receive a set of images in sequential order</li>
+      <li>
+         For each image you will be able to provide a guess as to it's location
+         providing a latitude and longitude.
+      </li>
+      <li>After making a guess you will receive feedback on your accurracy.</li>
+      <li>
+         If your guess is 50 metres away from the location you won't score any
+         points.
+      </li>
+      <li>
+         If your guess is within 50 metres of the location the picture is taken
+         you'll receive points, as well as a map showing the distance between
+         your guess and the location.
+      </li>
+   </ol>
+
+   <table class="table-auto w-full">
+      <thead class="border-b border-accent">
+         <tr class="*:p-2">
+            <th>Distance</th>
+            <th>Score</th>
+         </tr>
+      </thead>
+      <tbody>
+         <tr class="border-b border-accent odd:bg-slate-800">
+            <td>> 5m</td>
+            <td>100 points</td>
+         </tr>
+         <tr class="border-b border-accent odd:bg-slate-800">
+            <td>5-10m</td>
+            <td>50 points</td>
+         </tr>
+         <tr class="border-b border-accent odd:bg-slate-800">
+            <td>10-20m</td>
+            <td>40 points</td>
+         </tr>
+         <tr class="border-b border-accent odd:bg-slate-800">
+            <td>20-30m</td>
+            <td>30 points</td>
+         </tr>
+         <tr class="border-b border-accent odd:bg-slate-800">
+            <td>30-40m</td>
+            <td>20 points</td>
+         </tr>
+
+         <tr class="border-b border-accent odd:bg-slate-800">
+            <td>40-50m</td>
+            <td>10 points</td>
+         </tr>
+      </tbody>
+   </table>
+
+   <app-button
+      variant="primary"
+      label="Start Game"
+      [disabled]="isPending"
+      class="mx-auto w-50 mt-5"
+      (onClick)="startGame()" />
+</div>

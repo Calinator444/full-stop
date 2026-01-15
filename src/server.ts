@@ -1,7 +1,11 @@
 import { cert, initializeApp } from 'firebase-admin/app';
 import { type Challenge } from './types/challenge';
-import { FieldValue, GeoPoint, getFirestore } from 'firebase-admin/firestore';
-import { Game as GameSesion } from './types/game';
+import {
+   DocumentReference,
+   GeoPoint,
+   getFirestore,
+} from 'firebase-admin/firestore';
+import { Game as GameSession } from './types/game';
 import 'dotenv/config';
 import {
    AngularNodeAppEngine,
@@ -12,6 +16,7 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 import { GuessResponse } from './types/api/guess';
+import { ScoreBoardResponse } from './types/api/scoreboard';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -35,18 +40,6 @@ const app = express();
 app.use(express.json()); // <-- Add this line
 
 const angularApp = new AngularNodeAppEngine();
-
-/**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
 
 app.get('/api/challenges', async (req, res) => {
    const challengeRef = db.collection('challenges');
@@ -74,18 +67,47 @@ app.get('/api/challenges/:id', async (req, res) => {
    res.json(challenge.data());
 });
 
-type Game = {
-   challenges: FirebaseFirestore.DocumentReference<
-      Challenge & { order: number }
-   >[];
-   startedAt: Date;
-   guesses: {
-      coordinates: Coordinates;
-      score: number;
-   }[];
-};
+app.get<{ gameId: string }, ScoreBoardResponse | string>(
+   '/api/games/:gameId/scoreboard',
+   async (req, res) => {
+      const gameId = req.params['gameId'];
+      const gamesRef = db
+         .collection('games')
+         .doc(gameId)
+         .withConverter(GameConverter);
 
-app.post<{ gameId: string }, GameSesion | string>(
+      const gameDoc = await gamesRef.get();
+      const gameData = gameDoc.data();
+
+      if (!gameDoc.exists || !gameData) {
+         res.status(404).send('Game not found');
+         return;
+      }
+
+      const { guesses } = gameData;
+      res.contentType('application/json');
+
+      let total = 0;
+      for (let guess of guesses) {
+         total += guess.score;
+      }
+      guesses.map((guess) => {
+         guess.score;
+      });
+      res.json({
+         score: total,
+         completedAt: new Date(),
+         rounds: guesses.map((guess, index) => ({
+            guess: guess.coordinates,
+            distance: guess.distance,
+            points: guess.score,
+            coordinates: guess.coordinates,
+         })),
+      });
+   }
+);
+
+app.post<{ gameId: string }, GameSession | string>(
    '/api/games/:gameId/play',
    async (req, res) => {
       const gameId = req.params['gameId'];
@@ -121,12 +143,12 @@ app.post<{ gameId: string }, GameSesion | string>(
 
       const { guesses } = gameData;
 
-      // const challengeDoc = await challenge.get();
-
       res.contentType('application/json');
       res.json({
          gameId: gameId,
          challenges: challenges,
+         stage: gameData.stage,
+         startedAt: gameData.startedAt,
          guesses,
       });
    }
@@ -149,6 +171,7 @@ app.post('/api/games/start', async (req, res) => {
    await gameRef.set({
       startedAt: new Date(),
       challenges: sortedDocs.map((doc) => doc.ref),
+      stage: 'in-progress',
       guesses: [],
    });
 
@@ -182,7 +205,13 @@ const converter = <T>() => ({
       snap.data() as T,
 });
 
-const GameConverter = converter<Game>();
+const GameConverter =
+   converter<
+      Replace<
+         Omit<GameSession, 'gameId'>,
+         { challenges: DocumentReference<Challenge>[] }
+      >
+   >();
 
 const ChallengeConverter = converter<Challenge & { order: number }>();
 
@@ -194,7 +223,7 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
       const gameRef = db
          .collection('games')
          .doc(gameId)
-         .withConverter(converter<Game>());
+         .withConverter(GameConverter);
 
       const gameDoc = await gameRef.get();
 
@@ -204,7 +233,6 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
          res.status(404).send('Game not found');
          return;
       }
-
       const challengeData = gameData.challenges;
 
       const challenges = await Promise.all(
@@ -236,9 +264,14 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
          return;
       }
       gameRef.update({
+         stage:
+            req.body.level === gameData.challenges.length
+               ? 'completed'
+               : 'in-progress',
          guesses: [
             ...gameData.guesses,
             {
+               distance: Math.trunc(distance),
                coordinates: new GeoPoint(
                   req.body._latitude,
                   req.body._longitude
@@ -246,6 +279,10 @@ app.post<{ gameId: string }, GuessResponse | string, GuessRequest>(
                score: points,
             },
          ],
+      });
+
+      await gameRef.update({
+         stage: 'completed',
       });
 
       res.contentType('application/json');

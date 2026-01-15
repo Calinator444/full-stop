@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Button } from '../button/button';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { GameResponse } from '../../types/api/game';
+import { Game } from '../../types/game';
 
 @Component({
    selector: 'app-home',
@@ -10,12 +10,14 @@ import { GameResponse } from '../../types/api/game';
    templateUrl: './home.html',
 })
 export class Home {
+   isPending: boolean = false;
    constructor(
       private httpClient: HttpClient,
       private router: Router
    ) {}
    startGame() {
-      this.httpClient.post<GameResponse>('/api/games/start', {}).subscribe({
+      this.isPending = true;
+      this.httpClient.post<Game>('/api/games/start', {}).subscribe({
          next: (res) => {
             this.router.navigate(['/games', res.gameId]);
          },

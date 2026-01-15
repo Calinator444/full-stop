@@ -3,8 +3,6 @@ import { LoaderCircleIcon, LucideAngularModule, XIcon } from 'lucide-angular';
 import { Button } from '../button/button';
 import { Game as GameSession } from '../../types/game';
 import { ActivatedRoute, Router } from '@angular/router';
-import { environment } from '../../environments/environment';
-
 import { Challenge } from '../../types/challenge';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +10,6 @@ import { GuessResponse } from '../../types/api/guess';
 import { InputBox } from '../input/input';
 import { GoogleMap, MapMarker, MapPolyline } from '@angular/google-maps';
 import { JsonPipe } from '@angular/common';
-import { ScoreResult } from '../../types/score-result';
 
 @Component({
    selector: 'app-game',
@@ -34,15 +31,9 @@ export class Game implements OnInit {
       private route: ActivatedRoute,
       private http: HttpClient,
       private router: Router
-   ) {
-      this.gameId = this.route.snapshot.paramMap.get('id') || '';
-   }
-   // testing with coordinates for Image 1 (Sydney)
-   center: google.maps.LatLngLiteral = {
-      lat: -33.849604803258465,
-      lng: 151.16430681061593,
-   };
-   zoom = 12;
+   ) {}
+
+   zoom = 1;
    readonly XIcon = XIcon;
    readonly LoaderCircleIcon = LoaderCircleIcon;
 
@@ -77,7 +68,6 @@ export class Game implements OnInit {
       fontSize: '16px',
       fontWeight: 'bold',
    };
-   // activeChallenge: Challenge | null = null;
    image: string = '';
    labl = 'this is a marker label';
    level: number = -1;
@@ -92,11 +82,10 @@ export class Game implements OnInit {
    prevDiff: number = -1;
    showScore = false;
    vertices: google.maps.LatLngLiteral[] = [];
-   // TODO: find a more elegant way to determine when to show the score
-   // maybe using a redux store?
    scoreResult?: GuessResponse;
 
    ngOnInit() {
+      this.gameId = this.route.snapshot.paramMap.get('id') || '';
       this.http
          .post<GameSession>(`/api/games/${this.gameId}/play`, {})
          .subscribe((data) => {
@@ -106,8 +95,6 @@ export class Game implements OnInit {
                data.challenges.length,
                data.guesses.length + 1
             );
-
-            // this.activeChallenge = data.challenges[this.level - 1];
             this.gameStage = 'playing';
             this.cdr.detectChanges();
          });
@@ -122,6 +109,10 @@ export class Game implements OnInit {
    }
    get activeChallenge() {
       return this.stages[this.level - 1];
+   }
+
+   endGame() {
+      this.router.navigate(['games', this.gameId, 'score']);
    }
 
    handleGuess() {
@@ -143,11 +134,7 @@ export class Game implements OnInit {
                };
                this.vertices = [this.guessPosition, this.actualPosition];
             }
-
-            // this.activeChallenge = this.stages[this.level - 1];
             this.scoreResult = data;
-            // this.scoreResult = data.points;
-
             if (this.level === this.stages.length) {
                this.gameStage = 'gameover';
             } else {

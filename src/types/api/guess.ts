@@ -1,5 +1,3 @@
-import { GuessResult } from '../guess';
-
 export type GuessResponse = {
    distance: number;
    points: number;
